@@ -185,6 +185,20 @@ MARQUES = sorted(df_raw["Marque"].dropna().unique())
 
 # Palette cohérente
 COLORS = px.colors.qualitative.Set2
+MOIS_LABELS = {
+    1: "Janvier",
+    2: "Février",
+    3: "Mars",
+    4: "Avril",
+    5: "Mai",
+    6: "Juin",
+    7: "Juillet",
+    8: "Août",
+    9: "Septembre",
+    10: "Octobre",
+    11: "Novembre",
+    12: "Décembre"
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers UI
@@ -197,7 +211,44 @@ def metric_card(label, value):
     </div>
     """, unsafe_allow_html=True)
 
-def result_card(prediction_arrondie, ville, marque, annee, puissance_moy, ptac_moy):
+def result_card(prediction_arrondie, niveau, ville, marque, annee, mois, historique_count, puissance_moy, ptac_moy):
+    if niveau == "Prévision faible":
+        badge_color = "#ef4444"
+    elif niveau == "Prévision moyenne":
+        badge_color = "#f59e0b"
+    else:
+        badge_color = "#22c55e"
+
+    st.markdown(f"""
+    <div class="result-card">
+        <div class="result-title">Résultat de la prédiction</div>
+        <div class="result-value">{prediction_arrondie} unités</div>
+
+        <div style="
+            margin: 0 auto 16px auto;
+            background:{badge_color};
+            color:white;
+            padding:6px 14px;
+            border-radius:999px;
+            font-weight:700;
+            width:fit-content;
+            font-size:0.95rem;
+        ">
+            {niveau}
+        </div>
+
+        <div class="result-meta">
+            Ville: {ville}<br>
+            Marque: {marque}<br>
+            Mois: {mois}<br>
+            Année: {annee}<br>
+            Historique disponible: {historique_count} enregistrements<br>
+            Puissance moyenne: {puissance_moy:.2f}<br>
+            PTAC moyen: {ptac_moy:.2f}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown(f"""
     <div class="result-card">
         <div class="result-title">Résultat de la prédiction</div>
@@ -493,7 +544,7 @@ elif page == "🔮 Prévisions 2026":
 elif page == "🎯 Simulateur de prédiction":
 
     st.markdown('<div class="main-title">🎯 Simulateur de prédiction</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Estimez les ventes d\'une marque dans une ville pour une année donnée</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">Estimez les ventes d\'une marque dans une ville pour un mois et une année donnés</div>', unsafe_allow_html=True)
 
     st.markdown("---")
     col_form, col_result = st.columns([1, 1], gap="large")
@@ -503,9 +554,21 @@ elif page == "🎯 Simulateur de prédiction":
 
         ville_sim = st.selectbox("🏙️ Ville", VILLES)
         marque_sim = st.selectbox("🏭 Marque", MARQUES)
-        annee_sim = st.slider("📅 Année de prévision", min_value=2026, max_value=2030, value=2026)
 
-        mask = (df_raw["Ville"] == ville_sim) & (df_raw["Marque"] == marque_sim)
+        col_date1, col_date2 = st.columns(2)
+        with col_date1:
+            mois_sim = st.selectbox(
+                "📆 Mois de prévision",
+                options=list(MOIS_LABELS.keys()),
+                format_func=lambda x: MOIS_LABELS[x]
+            )
+        with col_date2:
+            annee_sim = st.slider("📅 Année de prévision", min_value=2026, max_value=2030, value=2026)
+
+        mask = (
+            (df_raw["Ville"] == ville_sim) &
+            (df_raw["Marque"] == marque_sim)
+        )
         df_combo = df_raw[mask]
 
         if len(df_combo) > 0:
@@ -534,46 +597,89 @@ elif page == "🎯 Simulateur de prédiction":
 
             X_sim = pd.DataFrame([{
                 "Année": annee_sim,
+                "Mois": mois_sim,
                 "PUISSANCE_MOY": puissance_moy,
                 "PTAC_MOY": ptac_moy,
                 "Ville_enc": ville_enc,
                 "Marque_enc": marque_enc
             }])
 
+            # إذا model قديم بلا Mois
+            expected_features = getattr(model, "feature_names_in_", None)
+
+            if expected_features is not None:
+                X_sim = X_sim[[col for col in expected_features if col in X_sim.columns]]
+
             prediction = float(model.predict(X_sim)[0])
             prediction_arrondie = max(0, round(prediction))
 
+            if prediction_arrondie <= 1:
+                niveau = "Prévision faible"
+            elif prediction_arrondie <= 3:
+                niveau = "Prévision moyenne"
+            else:
+                niveau = "Prévision élevée"
+
             result_card(
                 prediction_arrondie=prediction_arrondie,
+                niveau=niveau,
                 ville=ville_sim,
                 marque=marque_sim,
                 annee=annee_sim,
+                mois=MOIS_LABELS[mois_sim],
+                historique_count=historique_count,
                 puissance_moy=puissance_moy,
                 ptac_moy=ptac_moy
             )
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            hist = (
+            hist_annee = (
                 df_raw[(df_raw["Ville"] == ville_sim) & (df_raw["Marque"] == marque_sim)]
                 .groupby("Année")
                 .size()
                 .reset_index(name="Ventes")
             )
 
-            if len(hist) > 0:
-                fig_hist = px.line(
-                    hist,
-                    x="Année",
-                    y="Ventes",
-                    markers=True,
-                    title="Historique des ventes de cette combinaison",
-                    template="plotly_white"
-                )
-                fig_hist.update_layout(margin=dict(l=10, r=10, t=40, b=10))
-                st.plotly_chart(fig_hist, width="stretch")
-            else:
-                st.warning("Aucun historique disponible pour cette combinaison.")
+            hist_mois = (
+                df_raw[(df_raw["Ville"] == ville_sim) & (df_raw["Marque"] == marque_sim)]
+                .groupby("Mois")
+                .size()
+                .reset_index(name="Ventes")
+            )
+
+            col_hist1, col_hist2 = st.columns(2)
+
+            with col_hist1:
+                if len(hist_annee) > 0:
+                    fig_hist = px.line(
+                        hist_annee,
+                        x="Année",
+                        y="Ventes",
+                        markers=True,
+                        title="Historique annuel des ventes",
+                        template="plotly_white"
+                    )
+                    fig_hist.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+                    st.plotly_chart(fig_hist, width="stretch")
+                else:
+                    st.warning("Aucun historique annuel disponible.")
+
+            with col_hist2:
+                if len(hist_mois) > 0:
+                    hist_mois["NomMois"] = hist_mois["Mois"].map(MOIS_LABELS)
+
+                    fig_mois = px.bar(
+                        hist_mois.sort_values("Mois"),
+                        x="NomMois",
+                        y="Ventes",
+                        title="Historique mensuel des ventes",
+                        template="plotly_white"
+                    )
+                    fig_mois.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+                    st.plotly_chart(fig_mois, width="stretch")
+                else:
+                    st.warning("Aucun historique mensuel disponible.")
         else:
             empty_result_card()
 
