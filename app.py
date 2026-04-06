@@ -215,7 +215,6 @@ model, encoders = load_model()
 
 VILLES = sorted(df_raw["Ville"].dropna().unique())
 MARQUES = sorted(df_raw["Marque"].dropna().unique())
-
 COLORS = px.colors.qualitative.Set2
 
 MOIS_LABELS = {
