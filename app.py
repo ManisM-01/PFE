@@ -304,51 +304,76 @@ if page == "📊 Exploration des données":
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        ventes_marque = df_filtered.groupby("Marque").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True)
+        ventes_marque = df_filtered.groupby("Marque").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True).copy()
         ventes_marque["Ventes"] = pd.to_numeric(ventes_marque["Ventes"], errors="coerce")
         ventes_marque = ventes_marque.dropna(subset=["Ventes"])
-        fig1 = px.bar(
-            ventes_marque,
-            x="Ventes",
-            y="Marque",
-            orientation="h",
-            title="Ventes par marque",
-            template="plotly_white"
-        )
-        fig1.update_layout(showlegend=False, coloraxis_showscale=False, title_font_size=15, margin=dict(l=10, r=10, t=40, b=10))
-        st.plotly_chart(fig1, width="stretch")
+
+        if not ventes_marque.empty:
+            fig1 = px.bar(
+                ventes_marque,
+                x="Ventes",
+                y="Marque",
+                orientation="h",
+                title="Ventes par marque",
+                template="plotly_white"
+            )
+            fig1.update_layout(
+                showlegend=False,
+                title_font_size=15,
+                margin=dict(l=10, r=10, t=40, b=10)
+            )
+            st.plotly_chart(fig1, width="stretch")
+        else:
+            st.warning("Aucune donnée disponible pour le graphique des marques.")
 
     with col_g2:
-        ventes_ville = df_filtered.groupby("Ville").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True)
+        ventes_ville = df_filtered.groupby("Ville").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True).copy()
         ventes_ville["Ventes"] = pd.to_numeric(ventes_ville["Ventes"], errors="coerce")
-        ventes_ville = ventes_ville.dropna(subset=["Ventes"])   
-        fig2 = px.bar(
-            ventes_ville,
-            x="Ventes",
-            y="Ville",
-            orientation="h",
-            template="plotly_white"
-        )
-        fig2.update_layout(showlegend=False, coloraxis_showscale=False, title_font_size=15, margin=dict(l=10, r=10, t=40, b=10))
-        st.plotly_chart(fig2, width="stretch")
+        ventes_ville = ventes_ville.dropna(subset=["Ventes"])
+
+        if not ventes_ville.empty:
+            fig2 = px.bar(
+                ventes_ville,
+                x="Ventes",
+                y="Ville",
+                orientation="h",
+                title="Ventes par ville",
+                template="plotly_white"
+            )
+            fig2.update_layout(
+                showlegend=False,
+                title_font_size=15,
+                margin=dict(l=10, r=10, t=40, b=10)
+            )
+            st.plotly_chart(fig2, width="stretch")
+        else:
+            st.warning("Aucune donnée disponible pour le graphique des villes.")
 
     st.markdown('<div class="section-header">📅 Évolution annuelle des ventes</div>', unsafe_allow_html=True)
     evolution = df_filtered.groupby(["Année", "Marque"]).size().reset_index(name="Ventes")
     top_marques = evolution.groupby("Marque")["Ventes"].sum().nlargest(6).index
     evolution_top = evolution[evolution["Marque"].isin(top_marques)]
 
-    fig3 = px.line(
-        evolution_top,
-        x="Année",
-        y="Ventes",
-        color="Marque",
-        markers=True,
-        title="Évolution des ventes par année (Top 6 marques)",
-        template="plotly_white",
-        color_discrete_sequence=COLORS
-    )
-    fig3.update_layout(title_font_size=15, legend_title="Marque", margin=dict(l=10, r=10, t=40, b=10), xaxis=dict(tickmode="linear", dtick=1))
-    st.plotly_chart(fig3, width="stretch")
+    if not evolution_top.empty:
+        fig3 = px.line(
+            evolution_top,
+            x="Année",
+            y="Ventes",
+            color="Marque",
+            markers=True,
+            title="Évolution des ventes par année (Top 6 marques)",
+            template="plotly_white",
+            color_discrete_sequence=COLORS
+        )
+        fig3.update_layout(
+            title_font_size=15,
+            legend_title="Marque",
+            margin=dict(l=10, r=10, t=40, b=10),
+            xaxis=dict(tickmode="linear", dtick=1)
+        )
+        st.plotly_chart(fig3, width="stretch")
+    else:
+        st.warning("Aucune donnée disponible pour l'évolution annuelle.")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # PAGE 2 — Prévisions 2026
@@ -394,34 +419,50 @@ elif page == "🔮 Prévisions 2026":
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        top10_marques = prev_marque.head(10).sort_values("Prévision_totale", ascending=True)
-        fig4 = px.bar(
-            top10_marques,
-            x="Prévision_totale",
-            y="Marque",
-            orientation="h",
-            title="Top 10 marques — Prévisions 2026",
-            color="Prévision_totale",
-            color_continuous_scale="Blues",
-            template="plotly_white"
-        )
-        fig4.update_layout(showlegend=False, coloraxis_showscale=False, title_font_size=15, margin=dict(l=10, r=10, t=40, b=10))
-        st.plotly_chart(fig4, width="stretch")
+        top10_marques = prev_marque.head(10).sort_values("Prévision_totale", ascending=True).copy()
+        top10_marques["Prévision_totale"] = pd.to_numeric(top10_marques["Prévision_totale"], errors="coerce")
+        top10_marques = top10_marques.dropna(subset=["Prévision_totale"])
+
+        if not top10_marques.empty:
+            fig4 = px.bar(
+                top10_marques,
+                x="Prévision_totale",
+                y="Marque",
+                orientation="h",
+                title="Top 10 marques — Prévisions 2026",
+                template="plotly_white"
+            )
+            fig4.update_layout(
+                showlegend=False,
+                title_font_size=15,
+                margin=dict(l=10, r=10, t=40, b=10)
+            )
+            st.plotly_chart(fig4, width="stretch")
+        else:
+            st.warning("Aucune donnée disponible pour le graphique des marques.")
 
     with col_g2:
-        top10_villes = prev_ville.head(10).sort_values("Prévision_totale", ascending=True)
-        fig5 = px.bar(
-            top10_villes,
-            x="Prévision_totale",
-            y="Ville",
-            orientation="h",
-            title="Top 10 villes — Prévisions 2026",
-            color="Prévision_totale",
-            color_continuous_scale="Purples",
-            template="plotly_white"
-        )
-        fig5.update_layout(showlegend=False, coloraxis_showscale=False, title_font_size=15, margin=dict(l=10, r=10, t=40, b=10))
-        st.plotly_chart(fig5, width="stretch")
+        top10_villes = prev_ville.head(10).sort_values("Prévision_totale", ascending=True).copy()
+        top10_villes["Prévision_totale"] = pd.to_numeric(top10_villes["Prévision_totale"], errors="coerce")
+        top10_villes = top10_villes.dropna(subset=["Prévision_totale"])
+
+        if not top10_villes.empty:
+            fig5 = px.bar(
+                top10_villes,
+                x="Prévision_totale",
+                y="Ville",
+                orientation="h",
+                title="Top 10 villes — Prévisions 2026",
+                template="plotly_white"
+            )
+            fig5.update_layout(
+                showlegend=False,
+                title_font_size=15,
+                margin=dict(l=10, r=10, t=40, b=10)
+            )
+            st.plotly_chart(fig5, width="stretch")
+        else:
+            st.warning("Aucune donnée disponible pour le graphique des villes.")
 
     st.markdown("---")
     st.markdown('<div class="section-header">🔍 Tableau des prévisions — Ville × Marque</div>', unsafe_allow_html=True)
