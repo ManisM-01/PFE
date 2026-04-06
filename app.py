@@ -305,14 +305,14 @@ if page == "📊 Exploration des données":
 
     with col_g1:
         ventes_marque = df_filtered.groupby("Marque").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True)
+        ventes_marque["Ventes"] = pd.to_numeric(ventes_marque["Ventes"], errors="coerce")
+        ventes_marque = ventes_marque.dropna(subset=["Ventes"])
         fig1 = px.bar(
             ventes_marque,
             x="Ventes",
             y="Marque",
             orientation="h",
             title="Ventes par marque",
-            color="Ventes",
-            color_continuous_scale="Blues",
             template="plotly_white"
         )
         fig1.update_layout(showlegend=False, coloraxis_showscale=False, title_font_size=15, margin=dict(l=10, r=10, t=40, b=10))
@@ -320,14 +320,13 @@ if page == "📊 Exploration des données":
 
     with col_g2:
         ventes_ville = df_filtered.groupby("Ville").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True)
+        ventes_ville["Ventes"] = pd.to_numeric(ventes_ville["Ventes"], errors="coerce")
+        ventes_ville = ventes_ville.dropna(subset=["Ventes"])   
         fig2 = px.bar(
             ventes_ville,
             x="Ventes",
             y="Ville",
             orientation="h",
-            title="Ventes par ville",
-            color="Ventes",
-            color_continuous_scale="Purples",
             template="plotly_white"
         )
         fig2.update_layout(showlegend=False, coloraxis_showscale=False, title_font_size=15, margin=dict(l=10, r=10, t=40, b=10))
