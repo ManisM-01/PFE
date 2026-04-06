@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import joblib
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit.components.v1 as components
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -17,7 +16,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CSS personnalisé (UI améliorée)
+# CSS personnalisé
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -36,33 +35,33 @@ st.markdown("""
     }
 
     .main-title {
-        font-size: 2.3rem;
+        font-size: 2.5rem;
         font-weight: 800;
-        color: #e8eefc;
-        margin-bottom: 0.2rem;
+        color: #f8fafc;
+        margin-bottom: 0.25rem;
         letter-spacing: -0.5px;
     }
 
     .sub-title {
-        font-size: 1rem;
+        font-size: 1.05rem;
         color: #94a3b8;
         margin-bottom: 2rem;
     }
 
     .section-header {
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #c7d2fe;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #dbeafe;
         border-left: 4px solid #4f7cff;
-        padding-left: 0.75rem;
-        margin: 1.5rem 0 1rem 0;
+        padding-left: 0.8rem;
+        margin: 1.6rem 0 1rem 0;
     }
 
     .metric-card {
         background: #ffffff;
-        border-radius: 18px;
-        padding: 18px 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+        border-radius: 20px;
+        padding: 20px 22px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.20);
         min-height: 120px;
     }
 
@@ -79,45 +78,42 @@ st.markdown("""
     }
 
     .result-card {
-        background: linear-gradient(135deg, #0f172a, #1e293b);
+        background: linear-gradient(135deg, #0f172a, #172554);
         border: 1px solid rgba(79,124,255,0.35);
-        border-radius: 20px;
-        padding: 24px;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.22);
-        min-height: 260px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        border-radius: 24px;
+        padding: 26px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.24);
+        min-height: 320px;
     }
 
     .result-title {
-        color: #a5b4fc;
-        font-size: 1rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-        text-align: center;
-    }
-
-    .result-value {
-        color: #ffffff;
-        font-size: 2.4rem;
+        color: #c7d2fe;
+        font-size: 1.05rem;
         font-weight: 800;
         margin-bottom: 12px;
         text-align: center;
     }
 
+    .result-value {
+        color: #ffffff;
+        font-size: 3rem;
+        font-weight: 900;
+        margin-bottom: 16px;
+        text-align: center;
+    }
+
     .result-meta {
-        color: #cbd5e1;
+        color: #e2e8f0;
         font-size: 1rem;
-        line-height: 1.9;
+        line-height: 1.95;
         text-align: center;
     }
 
     .empty-result {
-        border: 2px dashed rgba(255,255,255,0.35);
-        border-radius: 20px;
-        padding: 36px 20px;
-        min-height: 260px;
+        border: 2px dashed rgba(255,255,255,0.25);
+        border-radius: 24px;
+        padding: 42px 24px;
+        min-height: 320px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -126,19 +122,56 @@ st.markdown("""
         text-align: center;
     }
 
+    .mini-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 18px;
+        text-align: center;
+        min-height: 110px;
+    }
+
+    .mini-card-title {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+    }
+
+    .mini-card-value {
+        color: #ffffff;
+        font-size: 1.45rem;
+        font-weight: 800;
+    }
+
+    .helper-box {
+        background: rgba(79,124,255,0.08);
+        border: 1px solid rgba(79,124,255,0.18);
+        border-radius: 16px;
+        padding: 16px 18px;
+        color: #dbeafe;
+        margin-bottom: 1rem;
+    }
+
     .stButton > button {
         background: linear-gradient(90deg, #4f7cff, #7c4dff);
         color: white !important;
         border: none;
-        border-radius: 12px;
-        padding: 0.75rem 1.2rem;
-        font-weight: 700;
-        box-shadow: 0 10px 20px rgba(79,124,255,0.25);
+        border-radius: 14px;
+        padding: 0.82rem 1.3rem;
+        font-weight: 800;
+        box-shadow: 0 10px 22px rgba(79,124,255,0.28);
     }
 
     .stButton > button:hover {
         transform: translateY(-1px);
         transition: 0.2s ease;
+    }
+
+    div[data-testid="stSlider"] label,
+    div[data-testid="stSelectbox"] label,
+    div[data-testid="stMultiSelect"] label {
+        font-weight: 700 !important;
+        color: #e2e8f0 !important;
     }
 
     [data-testid="stDataFrame"] {
@@ -183,8 +216,8 @@ model, encoders = load_model()
 VILLES = sorted(df_raw["Ville"].dropna().unique())
 MARQUES = sorted(df_raw["Marque"].dropna().unique())
 
-# Palette cohérente
 COLORS = px.colors.qualitative.Set2
+
 MOIS_LABELS = {
     1: "Janvier",
     2: "Février",
@@ -211,6 +244,14 @@ def metric_card(label, value):
     </div>
     """, unsafe_allow_html=True)
 
+def mini_card(label, value):
+    st.markdown(f"""
+    <div class="mini-card">
+        <div class="mini-card-title">{label}</div>
+        <div class="mini-card-value">{value}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 def result_card(prediction_arrondie, niveau, ville, marque, annee, mois, historique_count, puissance_moy, ptac_moy):
     if niveau == "Prévision faible":
         badge_color = "#ef4444"
@@ -219,24 +260,27 @@ def result_card(prediction_arrondie, niveau, ville, marque, annee, mois, histori
     else:
         badge_color = "#22c55e"
 
-    st.markdown(f"""
+    badge_html = f"""
+    <div style="
+        margin: 0 auto 16px auto;
+        background:{badge_color};
+        color:white;
+        padding:6px 14px;
+        border-radius:999px;
+        font-weight:700;
+        width:fit-content;
+        font-size:0.95rem;
+        text-align:center;
+    ">
+        {niveau}
+    </div>
+    """
+
+    card_html = f"""
     <div class="result-card">
         <div class="result-title">Résultat de la prédiction</div>
         <div class="result-value">{prediction_arrondie} unités</div>
-
-        <div style="
-            margin: 0 auto 16px auto;
-            background:{badge_color};
-            color:white;
-            padding:6px 14px;
-            border-radius:999px;
-            font-weight:700;
-            width:fit-content;
-            font-size:0.95rem;
-        ">
-            {niveau}
-        </div>
-
+        {badge_html}
         <div class="result-meta">
             Ville: {ville}<br>
             Marque: {marque}<br>
@@ -247,31 +291,18 @@ def result_card(prediction_arrondie, niveau, ville, marque, annee, mois, histori
             PTAC moyen: {ptac_moy:.2f}
         </div>
     </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="result-card">
-        <div class="result-title">Résultat de la prédiction</div>
-        <div class="result-value">{prediction_arrondie} unités</div>
-        <div class="result-meta">
-            Ville: {ville}<br>
-            Marque: {marque}<br>
-            Année: {annee}<br>
-            Puissance moyenne: {puissance_moy:.2f}<br>
-            PTAC moyen: {ptac_moy:.2f}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    """
+    st.markdown(card_html, unsafe_allow_html=True)
 
 def empty_result_card():
     st.markdown("""
     <div class="empty-result">
         <div style="font-size: 3rem; margin-bottom: 8px;">🎯</div>
-        <div style="font-size: 1.25rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">
+        <div style="font-size: 1.35rem; font-weight: 800; color: #e2e8f0; margin-bottom: 10px;">
             Résultat
         </div>
         <div style="font-size: 1rem;">
-            Sélectionnez une ville et une marque,<br>
+            Sélectionnez une ville, une marque, un mois et une année,<br>
             puis cliquez sur <b>Lancer la prédiction</b>.
         </div>
     </div>
@@ -329,7 +360,11 @@ if page == "📊 Exploration des données":
     with col_f2:
         filtre_marques = st.multiselect("Marques", MARQUES, placeholder="Toutes les marques")
     with col_f3:
-        filtre_annees = st.multiselect("Années", sorted(df_raw["Année"].dropna().unique()), placeholder="Toutes les années")
+        filtre_annees = st.multiselect(
+            "Années",
+            sorted(df_raw["Année"].dropna().unique()),
+            placeholder="Toutes les années"
+        )
 
     df_filtered = df_raw.copy()
     if filtre_villes:
@@ -355,7 +390,13 @@ if page == "📊 Exploration des données":
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        ventes_marque = df_filtered.groupby("Marque").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True).copy()
+        ventes_marque = (
+            df_filtered.groupby("Marque")
+            .size()
+            .reset_index(name="Ventes")
+            .sort_values("Ventes", ascending=True)
+            .copy()
+        )
         ventes_marque["Ventes"] = pd.to_numeric(ventes_marque["Ventes"], errors="coerce")
         ventes_marque = ventes_marque.dropna(subset=["Ventes"])
 
@@ -378,7 +419,13 @@ if page == "📊 Exploration des données":
             st.warning("Aucune donnée disponible pour le graphique des marques.")
 
     with col_g2:
-        ventes_ville = df_filtered.groupby("Ville").size().reset_index(name="Ventes").sort_values("Ventes", ascending=True).copy()
+        ventes_ville = (
+            df_filtered.groupby("Ville")
+            .size()
+            .reset_index(name="Ventes")
+            .sort_values("Ventes", ascending=True)
+            .copy()
+        )
         ventes_ville["Ventes"] = pd.to_numeric(ventes_ville["Ventes"], errors="coerce")
         ventes_ville = ventes_ville.dropna(subset=["Ventes"])
 
@@ -401,6 +448,7 @@ if page == "📊 Exploration des données":
             st.warning("Aucune donnée disponible pour le graphique des villes.")
 
     st.markdown('<div class="section-header">📅 Évolution annuelle des ventes</div>', unsafe_allow_html=True)
+
     evolution = df_filtered.groupby(["Année", "Marque"]).size().reset_index(name="Ventes")
     top_marques = evolution.groupby("Marque")["Ventes"].sum().nlargest(6).index
     evolution_top = evolution[evolution["Marque"].isin(top_marques)]
@@ -435,8 +483,8 @@ elif page == "🔮 Prévisions 2026":
     st.markdown('<div class="sub-title">Résultats du modèle Random Forest — prévisions annuelles par ville et marque</div>', unsafe_allow_html=True)
 
     total_prevu = prev_marque_ville["Prévision_totale"].sum()
-    top_marque = prev_marque.iloc[0]["Marque"]
-    top_ville = prev_ville.iloc[0]["Ville"]
+    top_marque = prev_marque.iloc[0]["Marque"] if not prev_marque.empty else "-"
+    top_ville = prev_ville.iloc[0]["Ville"] if not prev_ville.empty else "-"
     nb_combos = len(prev_marque_ville)
 
     col1, col2, col3, col4 = st.columns(4)
@@ -520,9 +568,17 @@ elif page == "🔮 Prévisions 2026":
 
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        filtre_ville_prev = st.multiselect("Filtrer par ville", sorted(prev_marque_ville["Ville"].unique()), placeholder="Toutes les villes")
+        filtre_ville_prev = st.multiselect(
+            "Filtrer par ville",
+            sorted(prev_marque_ville["Ville"].unique()),
+            placeholder="Toutes les villes"
+        )
     with col_f2:
-        filtre_marque_prev = st.multiselect("Filtrer par marque", sorted(prev_marque_ville["Marque"].unique()), placeholder="Toutes les marques")
+        filtre_marque_prev = st.multiselect(
+            "Filtrer par marque",
+            sorted(prev_marque_ville["Marque"].unique()),
+            placeholder="Toutes les marques"
+        )
 
     df_prev_filtered = prev_marque_ville.copy()
     if filtre_ville_prev:
@@ -545,6 +601,13 @@ elif page == "🎯 Simulateur de prédiction":
 
     st.markdown('<div class="main-title">🎯 Simulateur de prédiction</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">Estimez les ventes d\'une marque dans une ville pour un mois et une année donnés</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="helper-box">
+        Choisissez une ville, une marque, un mois et une année, puis lancez la prédiction.
+        Le simulateur utilise les informations historiques disponibles pour estimer la demande future.
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
     col_form, col_result = st.columns([1, 1], gap="large")
@@ -582,11 +645,23 @@ elif page == "🎯 Simulateur de prédiction":
 
         st.markdown("---")
         st.markdown("**📜 Historique de cette combinaison :**")
-        st.write(f"- Nombre d'enregistrements historiques : **{historique_count}**")
-        st.write(f"- Puissance moyenne estimée : **{puissance_moy:.2f}**")
-        st.write(f"- PTAC moyen estimé : **{ptac_moy:.2f}**")
 
-        lancer = st.button("🚀 Lancer la prédiction")
+        h1, h2, h3 = st.columns(3)
+        with h1:
+            mini_card("Historique", historique_count)
+        with h2:
+            mini_card("Puissance moy.", f"{puissance_moy:.2f}")
+        with h3:
+            mini_card("PTAC moy.", f"{ptac_moy:.2f}")
+
+        cta1, cta2 = st.columns([1, 1])
+        with cta1:
+            lancer = st.button("🚀 Lancer la prédiction")
+        with cta2:
+            reset = st.button("↺ Réinitialiser")
+
+        if reset:
+            st.rerun()
 
     with col_result:
         st.markdown('<div class="section-header">📈 Résultat</div>', unsafe_allow_html=True)
@@ -604,9 +679,7 @@ elif page == "🎯 Simulateur de prédiction":
                 "Marque_enc": marque_enc
             }])
 
-            # إذا model قديم بلا Mois
             expected_features = getattr(model, "feature_names_in_", None)
-
             if expected_features is not None:
                 X_sim = X_sim[[col for col in expected_features if col in X_sim.columns]]
 
@@ -615,10 +688,13 @@ elif page == "🎯 Simulateur de prédiction":
 
             if prediction_arrondie <= 1:
                 niveau = "Prévision faible"
+                interpretation = "Demande limitée estimée pour cette combinaison."
             elif prediction_arrondie <= 3:
                 niveau = "Prévision moyenne"
+                interpretation = "Demande modérée estimée pour cette combinaison."
             else:
                 niveau = "Prévision élevée"
+                interpretation = "Demande importante estimée pour cette combinaison."
 
             result_card(
                 prediction_arrondie=prediction_arrondie,
@@ -632,7 +708,14 @@ elif page == "🎯 Simulateur de prédiction":
                 ptac_moy=ptac_moy
             )
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class="helper-box" style="margin-top:16px;">
+                    <b>Interprétation :</b> {interpretation}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
             hist_annee = (
                 df_raw[(df_raw["Ville"] == ville_sim) & (df_raw["Marque"] == marque_sim)]
@@ -648,9 +731,10 @@ elif page == "🎯 Simulateur de prédiction":
                 .reset_index(name="Ventes")
             )
 
-            col_hist1, col_hist2 = st.columns(2)
+            st.markdown("<br>", unsafe_allow_html=True)
+            g1, g2 = st.columns(2)
 
-            with col_hist1:
+            with g1:
                 if len(hist_annee) > 0:
                     fig_hist = px.line(
                         hist_annee,
@@ -660,17 +744,21 @@ elif page == "🎯 Simulateur de prédiction":
                         title="Historique annuel des ventes",
                         template="plotly_white"
                     )
-                    fig_hist.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+                    fig_hist.update_layout(
+                        margin=dict(l=10, r=10, t=40, b=10),
+                        xaxis=dict(tickmode="linear", dtick=1)
+                    )
                     st.plotly_chart(fig_hist, width="stretch")
                 else:
                     st.warning("Aucun historique annuel disponible.")
 
-            with col_hist2:
+            with g2:
                 if len(hist_mois) > 0:
+                    hist_mois = hist_mois.sort_values("Mois").copy()
                     hist_mois["NomMois"] = hist_mois["Mois"].map(MOIS_LABELS)
 
                     fig_mois = px.bar(
-                        hist_mois.sort_values("Mois"),
+                        hist_mois,
                         x="NomMois",
                         y="Ventes",
                         title="Historique mensuel des ventes",
