@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 import plotly.express as px
 import streamlit.components.v1 as components
@@ -291,6 +290,7 @@ def result_card(prediction_arrondie, niveau, ville, marque, annee, mois, histori
         </div>
     </div>
     """
+
     st.markdown(card_html, unsafe_allow_html=True)
 
 def empty_result_card():
